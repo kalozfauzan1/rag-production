@@ -14,6 +14,9 @@ dependencies = [
 [tool.ruff]
 line-length = 100
 target-version = "py313"
+# Dokumen berisi contoh kode untuk dijelaskan, bukan kode yang dijalankan —
+# formatter tidak boleh mengubah tampilannya.
+extend-exclude = ["**/*.md"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "ASYNC"]
