@@ -1,0 +1,19 @@
+# Command Code agent state (berubah otomatis, jangan di-commit)
+.commandcode/
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Environment & secrets
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Logs & coverage
+*.log
+coverage/
