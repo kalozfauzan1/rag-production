@@ -4,6 +4,20 @@
 > siklus test sendiri dan berakhir commit. Jangan tandai selesai sebelum perintah
 > verifikasinya benar-benar dijalankan dan hasilnya sesuai.
 
+**Status:** selesai dieksekusi 2026-09-18. Checkbox dibiarkan apa adanya sebagai catatan
+langkah. Penyimpangan dari plan, semuanya tercatat di `docs/decisions.md`:
+
+- **D15** — chunker ditulis ulang: batas chunk dicari lewat offset karakter, bukan penjumlahan
+  token per potongan (BPE tidak aditif; terukur 234 vs 704 token).
+- **`python-multipart`** — dependency yang tidak saya perkirakan: FastAPI memerlukannya untuk
+  parsing `multipart/form-data`. Ditambahkan saat eksekusi Task 8.
+- **`DocumentStatusResponse`** — tidak mewarisi `DocumentMeta`; kontrak API memakai
+  `document_id` sedangkan penyimpanan memakai `doc_id`.
+- **`uploads.py`** — operasi disk dipindah ke `asyncio.to_thread` (aturan lint ASYNC240 dan
+  konsisten dengan alasan yang sama seperti parsing).
+- **Impor `make_meta`** antar-test: helper tinggal di `tests/test_store.py` dan diimpor modul
+  test lain dari sana.
+
 **Goal:** File (PDF teks / HTML / Markdown / TXT) yang di-upload lewat
 `POST /api/documents` berubah menjadi chunk bertoken 500–800 dengan metadata halaman/section,
 tersimpan di disk, dan statusnya bisa dipantau.
