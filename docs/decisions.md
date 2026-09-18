@@ -62,3 +62,56 @@ Satu entri ditulis saat keputusan diambil, bukan setelahnya.
 - **Keputusan:** `logging.basicConfig(level=INFO)` dipanggil di `create_app()`; pesan log ditulis ASCII (body response HTTP tetap UTF-8, tidak terpengaruh).
 - **Alternatif ditolak:** menaikkan level log ke WARNING agar muncul lewat handler terakhir (menyembunyikan informasi, bukan mengonfigurasi); membiarkan encoding locale (hasilnya rusak di file log).
 - **Konsekuensi:** log aplikasi terlihat di dev maupun saat deploy; aturan "ASCII untuk pesan log" berlaku untuk kode berikutnya.
+
+---
+
+## 2026-09-18 — Task 2: ingestion & chunking
+
+### D9. Parser PDF: pdfplumber
+
+- **Konteks:** perlu mengekstrak teks PDF untuk chunking; pilihan ini menentukan lisensi dan kualitas teks.
+- **Keputusan:** pdfplumber (MIT).
+- **Alternatif ditolak:** PyMuPDF (jauh lebih cepat tapi AGPL-3.0 — demo publik di task 8 bisa memicu kewajiban membuka kode); pypdfium2 (cepat dan longgar, tapi bantuan layout lebih sedikit, relevan untuk PDF dua kolom); pypdf (ekstraksi paling dasar, urutan teks acak).
+- **Konsekuensi:** parsing lebih lambat; kalau nanti jadi masalah nyata, jalur gantinya PyMuPDF dengan konsekuensi lisensi — dicatat, bukan diputuskan sekarang.
+
+### D10. Ekstraksi HTML: trafilatura
+
+- **Konteks:** HTML perlu dibersihkan dari boilerplate (menu, iklan, footer) sebelum di-chunk.
+- **Keputusan:** trafilatura (Apache-2.0), output markdown supaya heading bisa jadi metadata section.
+- **Alternatif ditolak:** readability-lxml (lebih sederhana, hasil kurang rapi di halaman non-artikel); heuristik BeautifulSoup sendiri (rapuh dan memakan waktu untuk masalah yang bukan inti pembelajaran).
+- **Konsekuensi:** satu dependency besar; heuristik pembersihannya tidak kita tulis sendiri — sebagai gantinya kita bandingkan hasilnya dengan `get_text()` mentah di dokumen learning.
+
+### D11. Pemrosesan ingestion: in-process + thread pool
+
+- **Konteks:** parsing sinkron dan CPU-bound; endpoint upload tidak boleh menggantung menunggu selesai.
+- **Keputusan:** job in-process (`asyncio.create_task` + registry) dengan pekerjaan berat dijalankan lewat `asyncio.to_thread`; status dibaca dari `meta.json` + registry.
+- **Alternatif ditolak:** `BackgroundTasks` bawaan Starlette (terikat siklus response, kurang cocok untuk job panjang); queue Redis/Celery (menambah layanan yang harus di-deploy, padahal masalahnya belum ada).
+- **Konsekuensi:** job hilang saat restart — dimitigasi dengan rekonsiliasi saat startup (status `processing` yatim diubah jadi `failed`). Jalur peningkatan ke queue dicatat sebagai utang task 9.
+
+### D12. Satuan chunk: token `cl100k_base` (tiktoken)
+
+- **Konteks:** roadmap meminta 500–800 token; "token" harus didefinisikan karena tiap model punya tokenizer berbeda.
+- **Keputusan:** tiktoken `cl100k_base` — tokenizer yang dipakai `text-embedding-3-*` (kandidat utama task 3); panjang chunk tetap dibatasi token, bukan karakter.
+- **Alternatif ditolak:** menghitung karakter (tidak mencerminkan batas model embedding/konteks); memakai tokenizer model embedding sejak awal (modelnya belum dipilih — akan mengunci keputusan task 3 lebih awal).
+- **Konsekuensi:** kalau task 3 memilih Voyage atau BGE-m3, jumlah token untuk teks Indonesia bisa berbeda jauh (1,5–2×); risiko ini dicatat di spec dan akan diukur di task 3.
+
+### D13. Penyimpanan hasil: file JSONL di `data/`
+
+- **Konteks:** hasil ingestion harus bisa dipakai task 3 (embedding) dan diperiksa manual.
+- **Keputusan:** `data/uploads/{sha256}.{ext}`, `data/documents/{doc_id}/meta.json`, `chunks.jsonl`.
+- **Alternatif ditolak:** SQLite (skema yang akan digantikan vector DB di task 4, plus tidak bisa dibaca mata); menyimpan di memori (hilang saat restart, tidak bisa diperiksa).
+- **Konsekuensi:** `data/` masuk `.gitignore`; `doc_id` = SHA-256 isi file sehingga upload ulang bersifat idempotent dan nama file dari client tidak pernah dipakai sebagai path.
+
+### D14. Hasil ekstraksi berupa blocks, bukan satu string panjang
+
+- **Konteks:** sitasi task 5 membutuhkan asal-usul teks (halaman PDF, section HTML/Markdown).
+- **Keputusan:** extractor mengembalikan `ExtractedDocument` berisi `Block(text, order, page, section)`; chunker bekerja di atas blocks dan mewarisi metadata itu.
+- **Alternatif ditolak:** teks tunggal + chunk tanpa metadata (lebih cepat, tapi sitasi nanti hanya bisa menyebut "chunk 37" tanpa lokasi asli).
+- **Konsekuensi:** setiap extractor punya tanggung jawab tambahan memetakan struktur dokumen; diuji per format.
+
+### D15. Batas chunk ditentukan dari offset karakter, bukan penjumlahan token per potongan
+
+- **Konteks:** implementasi pertama memecah teks secara rekursif per separator menjadi potongan kecil, lalu menjumlahkan token tiap potongan untuk mengisi anggaran. Hasil pengukuran: chunk hanya ~234 token padahal anggarannya 704. Sebabnya, tokenisasi BPE **tidak aditif** — `count_tokens("kata ")` sendirian ≈ 3 token, tetapi kontribusinya di dalam teks panjang ≈ 1 token, karena BPE menggabungkan pasangan yang sering muncul bersama.
+- **Keputusan:** dokumen dijadikan satu teks; batas tiap chunk dicari sebagai offset karakter dengan `count_tokens` pada slice aslinya (binary search, diperkirakan dari rasio karakter/token), lalu digeser ke separator terdekat yang masih masuk 40% terakhir rentang.
+- **Alternatif ditolak:** menghitung token per potongan lalu menjumlahkan (terbukti salah, chunk jadi 1/3 ukuran yang diminta); memakai jumlah karakter saja (tidak mencerminkan batas model embedding).
+- **Konsekuensi:** algoritma lebih sederhana (tidak ada `_Piece`, `_split_recursive`, maupun `_force_split`); biaya tambahan berupa beberapa panggilan `count_tokens` per chunk untuk binary search. Pelajaran umumnya dicatat di dokumen learning: **jangan menjumlahkan hasil tokenizer secara parsial**.
