@@ -1,6 +1,7 @@
 """Konfigurasi aplikasi dari environment / file .env."""
 
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -14,10 +15,25 @@ class Settings(BaseSettings):
     fake_token_delay_ms: int = 60
     sse_ping_interval_seconds: float = 15.0
 
+    data_dir: Path = Path("data")
+    max_upload_bytes: int = 20 * 1024 * 1024
+    chunk_max_tokens: int = 800
+    chunk_overlap_tokens: int = 96
+
     @property
     def cors_origin_list(self) -> list[str]:
         """CORS_ORIGINS boleh berisi beberapa origin, dipisah koma."""
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+
+    @property
+    def uploads_dir(self) -> Path:
+        """File asli hasil upload."""
+        return self.data_dir / "uploads"
+
+    @property
+    def documents_dir(self) -> Path:
+        """Metadata + chunk hasil ingestion."""
+        return self.data_dir / "documents"
 
 
 @lru_cache
