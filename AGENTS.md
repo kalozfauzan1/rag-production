@@ -11,9 +11,35 @@ Tujuan saya bukan sekadar punya kode yang jalan, tapi **memahami dan menguasai**
 ## Bahasa
 
 - Semua penjelasan dalam **Bahasa Indonesia**.
-- Istilah teknis tetap bahasa Inggris (`embedding`, `chunking`, `reranker`), beri penjelasan singkat saat pertama muncul.
+- Istilah teknis tetap bahasa Inggris (`embedding`, `chunking`, `reranker`), tapi wajib dijelaskan saat pertama muncul (lihat "ATURAN ISTILAH & SINGKATAN").
 - Kode, nama variabel, dan nama file tetap bahasa Inggris (standar industri).
 - Penjelasan panjang dipecah jadi heading/bullet pendek. Hindari dinding teks.
+
+## ATURAN ISTILAH & SINGKATAN: Selalu Jelaskan "Apa"-nya
+
+Setiap istilah teknis, singkatan, atau akronim yang muncul — di chat, kode, komentar, maupun dokumen — **wajib dijelaskan saat pertama muncul**. Jangan berasumsi saya sudah tahu.
+
+Saat menjelaskan istilah/singkatan, sertakan:
+
+1. **Kepanjangan** — singkatan dari apa (misal SSE = *Server-Sent Events*, HNSW = *Hierarchical Navigable Small World*).
+2. **Apa itu** — definisi sederhana; untuk konsep baru mulai dari analogi dulu.
+3. **Untuk apa di sini** — perannya di konteks yang sedang kita bahas, bukan definisi kamus.
+4. **Keuntungan & kekurangan singkat** — terutama kalau istilah itu adalah pilihan teknologi (misal SSE vs WebSocket vs polling).
+5. **Pembanding/alternatif** — kalau relevan, sebut apa yang biasa dipakai sebagai gantinya.
+
+Contoh kedalaman yang saya harapkan:
+
+```text
+**SSE (Server-Sent Events):** cara server mengirim data satu arah ke client lewat satu koneksi HTTP
+yang dibiarkan terbuka. Analogi: seperti radio siaran — server terus bicara, client hanya mendengar.
+Di RAG/LLM dipakai untuk streaming token jawaban supaya jawaban muncul bertahap, bukan menunggu
+selesai. Kelebihan: sederhana, lewat HTTP biasa, ada auto-reconnect. Kekurangan: satu arah, dan
+sebagian proxy/CDN bisa menahan (buffer) response sehingga streaming tidak real-time.
+Alternatif: WebSocket (dua arah, lebih kompleks), polling (boros dan lambat).
+```
+
+- Istilah yang sama muncul lagi di task lain? Ulangi penjelasan singkatnya (satu baris) — jangan berasumsi saya masih ingat.
+- Untuk task besar dengan banyak istilah baru, kumpulkan di satu bagian **Glosarium** pada dokumen `docs/learning/` terkait.
 
 ## ATURAN UTAMA: Selalu Jelaskan Keputusan Teknis
 
@@ -97,6 +123,7 @@ docs/
    - **Failure mode**: apa yang rusak kalau bagian ini gagal + cara mendeteksinya.
    - Catatan produksi: biaya, latency, scaling, operasional.
    - Cara menjalankan & menguji (perintah konkret).
+   - **Glosarium**: istilah & singkatan yang dipakai di dokumen, beserta kepanjangan dan artinya.
    - Eksperimen lanjutan + link referensi resmi.
 6. **Doc harus sinkron dengan kode**: kalau task berikutnya mengubah kode terkait, update doc yang relevan **di task yang sama** — bukan "nanti".
 7. **Chat = ringkasan, doc = penjelasan lengkap.** Di akhir task, sebutkan file doc yang dibuat/di-update beserta link-nya (`docs/learning/...`).
@@ -149,6 +176,7 @@ Urutan materi yang disarankan — jangan loncat fase tanpa membahas trade-off da
 - Kode "ajaib" tanpa penjelasan.
 - Menyembunyikan kompleksitas di balik framework tanpa menjelaskan isi perutnya.
 - Klaim angka/benchmark/harga tanpa sumber.
+- Memakai istilah, singkatan, atau akronim tanpa menjelaskan kepanjangan, arti, dan perannya.
 - Over-engineering: menambah komponen (cache, reranker, agent, graph, dll.) tanpa masalah nyata yang terukur.
 - Mengubah arah atau keputusan secara diam-diam.
 - Menyelesaikan task tanpa membuat/meng-update dokumen penjelasan yang relevan — dokumentasi bukan opsional.
@@ -156,5 +184,6 @@ Urutan materi yang disarankan — jangan loncat fase tanpa membahas trade-off da
 ## Lingkungan
 
 - OS: Windows. Perintah shell harus kompatibel dengan PowerShell/cmd.
-- Runtime: Node.js.
+- Backend: Python 3.13 dikelola `uv` (interpreter diunduh uv, bukan Python global mesin yang masih 3.10).
+- Frontend (mulai task 7): Node.js, terpasang v24.
 - Git repo, branch utama `main`.
