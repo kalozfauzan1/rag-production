@@ -82,8 +82,10 @@ async def sse_stream(
         # Dijalankan baik saat sukses, dibatalkan (client disconnect),
         # maupun saat generator ditutup paksa — jadi sumber tidak pernah
         # dibiarkan berjalan di belakang (nanti: tidak membayar token LLM sia-sia).
+        # Pesan log sengaja ASCII: saat stderr dialihkan ke file di Windows,
+        # Python memakai encoding locale dan karakter non-ASCII bisa rusak.
         if not finished:
-            logger.info("Stream berhenti sebelum `done` — client disconnect atau dibatalkan")
+            logger.info("Stream berhenti sebelum `done` - client disconnect atau dibatalkan")
         producer.cancel()
         with contextlib.suppress(asyncio.CancelledError):
             await producer

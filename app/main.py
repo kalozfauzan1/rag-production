@@ -1,5 +1,6 @@
 """Titik masuk ASGI: app factory, CORS, dan router."""
 
+import logging
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -13,6 +14,10 @@ STATIC_DIR = Path(__file__).parent / "static"
 
 
 def create_app() -> FastAPI:
+    # Uvicorn hanya mengatur logger `uvicorn.*`; tanpa ini log aplikasi
+    # (mis. catatan client disconnect) tidak akan terlihat sama sekali.
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+
     settings = get_settings()
     app = FastAPI(title="rag-production API", version="0.1.0")
 
