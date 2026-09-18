@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <title>SSE stream demo</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 2rem; max-width: 60rem; }
+      form { display: flex; gap: 0.5rem; }
+      input { flex: 1; padding: 0.5rem; }
+      button { padding: 0.5rem 1rem; }
+      #answer { min-height: 3rem; border: 1px solid #ccc; padding: 0.5rem; white-space: pre-wrap; }
+      pre { background: #111; color: #6f6; padding: 1rem; overflow: auto; max-height: 20rem; }
+    </style>
+  </head>
+  <body>
+    <h1>Demo streaming SSE</h1>
+    <p>
+      Halaman ini memakai <code>fetch</code> + <code>ReadableStream</code> (bukan
+      <code>EventSource</code>) karena endpoint-nya POST dan mengirim body.
+    </p>
+    <form id="form">
+      <input id="message" value="Apa itu RAG?" />
+      <button type="submit" id="send">Kirim</button>
+      <button type="button" id="stop" disabled>Stop</button>
+    </form>
+
+    <h2>Jawaban</h2>
+    <div id="answer"></div>
+
+    <h2>Frame mentah</h2>
+    <pre id="raw"></pre>
+
+    <script>
+      const form = document.getElementById("form");
+      const answerEl = document.getElementById("answer");
+      const rawEl = document.getElementById("raw");
+      const stopButton = document.getElementById("stop");
+      let controller = null;
+      let buffer = "";
+
+      function handleFrame(frame) {
+        if (frame.startsWith(":")) return; // heartbeat
+        const event = frame.match(/^event: (.*)$/m)?.[1];
+        const data = frame.match(/^data: (.*)$/m)?.[1];
+        if (!event || !data) return;
+        const payload = JSON.parse(data);
+        if (event === "token") answerEl.textContent += payload.text;
+        if (event === "done") answerEl.textContent += "\n\n[selesai]";
+        if (event === "error") answerEl.textContent += `\n\n[error] ${payload.message}`;
+      }
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        answerEl.textContent = "";
+        rawEl.textContent = "";
+        buffer = "";
+        controller = new AbortController();
+        stopButton.disabled = false;
+
+        try {
+          const response = await fetch("/api/chat/stream", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message: document.getElementById("message").value }),
+            signal: controller.signal,
+          });
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            const chunk = decoder.decode(value, { stream: true });
+            rawEl.textContent += chunk;
+            buffer += chunk;
+            let index;
+            while ((index = buffer.indexOf("\n\n")) !== -1) {
+              handleFrame(buffer.slice(0, index));
+              buffer = buffer.slice(index + 2);
+            }
+          }
+        } catch (error) {
+          if (error.name === "AbortError") answerEl.textContent += "\n\n[dihentikan user]";
+          else answerEl.textContent += `\n\n[gagal] ${error.message}`;
+        } finally {
+          stopButton.disabled = true;
+          controller = null;
+        }
+      });
+
+      stopButton.addEventListener("click", () => controller?.abort());
+    </script>
+  </body>
+</html>

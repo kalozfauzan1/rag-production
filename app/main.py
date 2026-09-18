@@ -1,10 +1,15 @@
 """Titik masuk ASGI: app factory, CORS, dan router."""
 
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 
 from app.api.routes import chat, health
 from app.core.config import get_settings
+
+STATIC_DIR = Path(__file__).parent / "static"
 
 
 def create_app() -> FastAPI:
@@ -23,6 +28,11 @@ def create_app() -> FastAPI:
 
     app.include_router(health.router)
     app.include_router(chat.router)
+
+    @app.get("/demo", include_in_schema=False)
+    async def demo() -> FileResponse:
+        """Halaman uji manual untuk melihat frame SSE apa adanya."""
+        return FileResponse(STATIC_DIR / "stream-demo.html")
 
     return app
 
