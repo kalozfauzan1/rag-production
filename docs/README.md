@@ -12,13 +12,13 @@ Index semua dokumen. Diperbarui setiap kali ada dokumen baru atau berubah.
 
 | Dokumen | Isi | Status |
 | --- | --- | --- |
-| [plans/2026-09-18-task1-fastapi-sse-setup.md](plans/2026-09-18-task1-fastapi-sse-setup.md) | 6 task langkah-demi-langkah: toolchain, app factory, inti SSE, endpoint chat, halaman demo, dokumentasi | siap dieksekusi |
+| [plans/2026-09-18-task1-fastapi-sse-setup.md](plans/2026-09-18-task1-fastapi-sse-setup.md) | 6 task langkah-demi-langkah: toolchain, app factory, inti SSE, endpoint chat, halaman demo, dokumentasi | selesai dieksekusi |
 
 ## Learning — konsep & penjelasan
 
 | Dokumen | Isi | Status |
 | --- | --- | --- |
-| [learning/fastapi-async-sse.md](learning/fastapi-async-sse.md) | Async generator, wire format SSE, heartbeat, disconnect, hasil percobaan | belum — ditulis saat implementasi task 1 |
+| [learning/fastapi-async-sse.md](learning/fastapi-async-sse.md) | Async generator, wire format SSE, heartbeat, disconnect, failure mode, hasil percobaan, glosarium | selesai |
 
 ## Lainnya
 

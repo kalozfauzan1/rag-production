@@ -47,7 +47,7 @@ Satu entri ditulis saat keputusan diambil, bukan setelahnya.
 - **Konteks:** butuh lint + format konsisten tanpa konfigurasi berlapis.
 - **Keputusan:** ruff (check + format), konfigurasi di `pyproject.toml`.
 - **Alternatif ditolak:** black + flake8 + isort (tiga tool, lebih lambat, konfigurasi tersebar).
-- **Konsekuensi:** satu perintah `uv run ruff check .` / `uv run ruff format .`; aturan dipilih selektif (E, F, I, UP, B, ASYNC), bukan semuanya.
+- **Konsekuensi:** satu perintah `uv run ruff check .` / `uv run ruff format .`; aturan dipilih selektif (E, F, I, UP, B, ASYNC), bukan semuanya. File Markdown dikecualikan dari formatter (`extend-exclude`), karena ruff ikut memformat blok kode Python di dokumen — dan contoh di dokumen sengaja ditulis untuk dijelaskan, bukan untuk dijalankan.
 
 ### D7. Gaya dependency FastAPI: `Annotated[..., Depends(...)]`
 
@@ -55,3 +55,10 @@ Satu entri ditulis saat keputusan diambil, bukan setelahnya.
 - **Keputusan:** pakai `Annotated[Streamer, Depends(get_streamer)]` — bentuk yang sekarang direkomendasikan dokumentasi FastAPI.
 - **Alternatif ditolak:** `= Depends(...)` + `extend-immutable-calls` (menambah pengecualian lint untuk pola yang memang sudah usang).
 - **Konsekuensi:** semua dependency di task berikutnya memakai `Annotated`; tidak ada pengecualian lint di `pyproject.toml`.
+
+### D8. Logging aplikasi dikonfigurasi eksplisit; pesan log ASCII
+
+- **Konteks:** ditemukan saat verifikasi manual — uvicorn hanya mengatur logger `uvicorn.*`, root logger tanpa handler, sehingga `logger.info(...)` dari kode kita tidak muncul sama sekali (pesan disconnect hilang). Temuan kedua: em-dash di pesan log rusak (`�`) ketika stderr dialihkan ke file di Windows, karena Python memakai encoding locale, bukan UTF-8.
+- **Keputusan:** `logging.basicConfig(level=INFO)` dipanggil di `create_app()`; pesan log ditulis ASCII (body response HTTP tetap UTF-8, tidak terpengaruh).
+- **Alternatif ditolak:** menaikkan level log ke WARNING agar muncul lewat handler terakhir (menyembunyikan informasi, bukan mengonfigurasi); membiarkan encoding locale (hasilnya rusak di file log).
+- **Konsekuensi:** log aplikasi terlihat di dev maupun saat deploy; aturan "ASCII untuk pesan log" berlaku untuk kode berikutnya.

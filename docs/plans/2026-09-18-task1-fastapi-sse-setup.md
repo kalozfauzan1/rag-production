@@ -287,6 +287,8 @@ async def health() -> dict[str, str]:
 ```python
 """Titik masuk ASGI: app factory, CORS, dan router."""
 
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -295,6 +297,10 @@ from app.core.config import get_settings
 
 
 def create_app() -> FastAPI:
+    # Uvicorn hanya mengatur logger `uvicorn.*`; tanpa ini log aplikasi
+    # (mis. catatan client disconnect) tidak akan terlihat sama sekali.
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+
     settings = get_settings()
     app = FastAPI(title="rag-production API", version="0.1.0")
 
@@ -1025,9 +1031,11 @@ Catat: apakah terlihat bertahap atau menggumpal — ini bukti streaming bekerja.
 
 Jalankan curl di Step 1, tekan `Ctrl+C` di tengah stream, lihat log server.
 
-Expected: baris log `Stream berhenti sebelum 'done' — client disconnect atau dibatalkan`.
-Catat perilaku persisnya (apakah pesan muncul, apakah ada traceback) — ini yang diklaim
-di spec §5 dan baru terbukti sekarang.
+Expected: baris log `Stream berhenti sebelum 'done' - client disconnect atau dibatalkan`.
+Catatan hasil eksekusi: ternyata log ini **tidak muncul** sebelum `logging.basicConfig()`
+ditambahkan di `create_app()` (uvicorn tidak mengonfigurasi root logger) — perbaikan sudah
+masuk Step 8 Task 2. Pesannya juga memakai `-`, bukan em-dash, karena karakter non-ASCII
+rusak saat stderr dialihkan ke file di Windows. Catat perilaku persisnya apa adanya.
 
 - [ ] **Step 3: Uji heartbeat**
 
