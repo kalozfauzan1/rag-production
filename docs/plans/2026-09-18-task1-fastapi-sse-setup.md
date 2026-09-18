@@ -4,6 +4,11 @@
 > punya siklus test sendiri dan berakhir commit. Jangan tandai selesai sebelum
 > perintah verifikasinya benar-benar dijalankan dan hasilnya sesuai.
 
+**Status:** selesai dieksekusi 2026-09-18. Checkbox di bawah sengaja dibiarkan apa
+adanya sebagai catatan langkah; penyimpangan dari plan dicatat di langkah terkait
+(logging aplikasi, pesan log ASCII, pengecualian Markdown dari ruff), dan semua
+keputusannya masuk `docs/decisions.md`.
+
 **Goal:** Server FastAPI dengan endpoint streaming SSE yang protokolnya benar — frame
 terformat, heartbeat saat idle, error setelah stream mulai jadi frame `error`, dan stream
 berhenti rapi saat client disconnect.
