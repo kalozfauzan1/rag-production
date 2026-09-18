@@ -1,18 +1,34 @@
 """Fixture bersama: app + AsyncClient + settings deterministik."""
 
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Iterator
+from pathlib import Path
 
 import httpx
 import pytest
 
 from app.core.config import Settings, get_settings
+from app.core.jobs import JobRunner
 from app.main import app
 
 
 @pytest.fixture
-def settings() -> Settings:
-    """Settings test: tanpa baca .env, delay kecil, ping lama supaya tidak mengganggu."""
-    return Settings(_env_file=None, fake_token_delay_ms=1, sse_ping_interval_seconds=60)
+def settings(tmp_path: Path) -> Settings:
+    """Settings test: tanpa baca .env, data di tmp_path, ping lama supaya tidak mengganggu."""
+    return Settings(
+        _env_file=None,
+        data_dir=tmp_path / "data",
+        fake_token_delay_ms=1,
+        sse_ping_interval_seconds=60,
+    )
+
+
+@pytest.fixture(autouse=True)
+def fresh_job_runner() -> Iterator[None]:
+    """Runner baru per test supaya status job tidak bocor antar-test."""
+    previous = app.state.job_runner
+    app.state.job_runner = JobRunner()
+    yield
+    app.state.job_runner = previous
 
 
 @pytest.fixture

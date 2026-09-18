@@ -7,8 +7,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
-from app.api.routes import chat, health
+from app.api.routes import chat, documents, health
 from app.core.config import get_settings
+from app.core.jobs import JobRunner
 
 STATIC_DIR = Path(__file__).parent / "static"
 
@@ -33,6 +34,11 @@ def create_app() -> FastAPI:
 
     app.include_router(health.router)
     app.include_router(chat.router)
+    app.include_router(documents.router)
+
+    # Runner job ikut siklus hidup aplikasi; task yang sedang jalan akan dibatalkan
+    # saat shutdown, dan `resolve_status` yang menandainya gagal pada proses berikutnya.
+    app.state.job_runner = JobRunner()
 
     @app.get("/demo", include_in_schema=False)
     async def demo() -> FileResponse:

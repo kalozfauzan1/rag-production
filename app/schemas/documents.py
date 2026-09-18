@@ -71,9 +71,28 @@ class DocumentUploadResponse(BaseModel):
     duplicate: bool
 
 
-class DocumentStatusResponse(DocumentMeta):
-    """`meta.json` + progres dari job yang sedang berjalan (kalau ada)."""
+class DocumentStatusResponse(BaseModel):
+    """Bentuk satu dokumen di API: isi `meta.json` + progres job yang berjalan.
 
+    Sengaja tidak mewarisi `DocumentMeta`: kontrak API memakai `document_id`,
+    sedangkan penyimpanan memakai `doc_id`. Pemisahan ini menjaga format file di disk
+    tidak ikut berubah kalau penamaan di API berubah.
+    """
+
+    document_id: str
+    filename: str
+    content_type: str
+    size_bytes: int
+    sha256: str
+    status: DocumentStatus
+    stage: str | None = None
+    created_at: datetime
+    updated_at: datetime
+    page_count: int | None = None
+    block_count: int | None = None
+    chunk_count: int | None = None
+    title: str | None = None
+    error: str | None = None
     progress: float | None = None
 
 
